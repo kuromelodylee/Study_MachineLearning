@@ -7,6 +7,7 @@
 3. 케라스 사용법  
   (1) 데이터 생성
     - kearas 기본 API에 데이터 세트가 있다. 간단히 from keras.datasets로 import할때 불러오면 된다.
-    - https://keras.io/api/datasets/  
-(2) 모델 생성
+    - https://keras.io/api/datasets/
+
+  (2) 모델 생성
     - ㅇㅊㄴㄹㅇㅇㄴ
