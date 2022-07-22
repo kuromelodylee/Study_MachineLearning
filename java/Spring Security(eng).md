@@ -1,5 +1,6 @@
 # Spring Security
 ## How to implement LOGIN function on normal mvc projects
+### This document is just for my reference refering blogs. As it could contain wrong information, please avoid to scrap to be spread.
 <br>
 
 ## 1. Abstract
@@ -43,7 +44,7 @@
         @Configuration
         public class SecurityConfig{
         
-        //make static resource excepted from security frame work
+        //make static resource excepted from security frame work (later it should be modified for security safe)
         @Bean
         public WebSecurityCustomizer webSecCustomizer(){
             return web -> web.ignoring().antMatchers("/resources/**");
@@ -58,6 +59,7 @@
                 //contorol all requests (permitall is to let all user can access)
                 .authorizeRequests()
                     .antMatchers("/**").permitAll()
+                    //.antMatchers("/**").hasRole("USER") //ONLY USER can access.
                     .anyRequest().authenticated().and()
                 //contorol login
                 .formLogin()
@@ -66,9 +68,12 @@
                     .usernameParameter("userId") //set jsp name parameter (default username)
                     .passwordParameter("userPw") //set jsp pass word parameter (default password)
                     .defaultSuccessUrl("/") //request when sucess 
-                    .failureUrl("/user/login") //request when failure
+                    .failureUrl("/user/login?error=true") //request when failure
                     .and()
                 .logout()
+                    .logoutRequestMatcher(new AntPathRequestMatcher("/user/logout"))
+                    .logoutSuccessUrl("/")
+                    .invalidateHttpSession(true) //kill session after logout
                     .and()
                 .build();
         }
@@ -78,7 +83,6 @@
         @Bean
         public AuthenticationManager authMng(AuthenticationConfiguration authConfig) throws Exception{
             return authConfig.getAuthenticationManager();
-        }
         }
 
         ```
@@ -95,12 +99,12 @@
             if (secUser == null) {
                 throw new UsernameNotFoundException("unable to find user ID");
             }
-            //User object provided by Sprong Sequrity is string, string, arraylist type. Therefore need to assign authority property by generic list type. 
+            //User object provided by Spring Sequrity is string, string, arraylist type. Therefore need to assign authority property by generic list type. 
             List<GrantedAuthority> auth = new ArrayList<>();
             if (secUser.getUserGrade().equals("BASIC")){
-                auth.add(new SimpleGrantedAuthority("USER"));
+                auth.add(new SimpleGrantedAuthority("ROLE_USER"));
             }else{
-                auth.add(new SimpleGrantedAuthority("ADMIN"));
+                auth.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             }
             User secReturnUser = new User(secUser.getUserId(), secUser.getUserPw(), auth);
             //console shows secReturnUser [Username=securityTest, Password=[PROTECTED], Enabled=true, AccountNonExpired=true, credentialsNonExpired=true, AccountNonLocked=true, Granted Authorities=[USER]]
@@ -119,7 +123,7 @@
      - if pw is not hased in the database like the password saved before applying this framework without hashing, Spring Security occurs error.    
      console -> o.s.s.c.bcrypt.BCryptPasswordEncoder     : Encoded password does not look like BCrypt
  4. ### When finding invalid properties
-     - option1) Simplified solution: If trying to enter wrong password or invalid ID, parameter will be transfered to client naming "param" and its value is "{error=}" with string type. in HTML, able to get value with ```${param}```. in javascript, able to get with ```"${param}"```
+     - option1) Simplified solution: If trying to enter wrong password or invalid ID, parameter will be transfered to client naming "param.error" and its value is as mentioned on config "true" with string type. in HTML, able to get value with ```${param.error}```. in javascript, able to get with ```"${param.error}"```
      - option2) Customizable solution: if you want to cutomize failure properties, please refer [clickMe(in Korean)](https://kimcoder.tistory.com/249?category=911141) referring add failure handler in configuration and handler class.
        ```java
         //add config property in Configuration
@@ -145,7 +149,7 @@
                         
                     }
         ```
-     - <span style="background-color: blue; color: white" > Step2) example by the cases wrting method  
+     - <span style="background-color: blue; color: white" > optional Step2) example by the cases wrting method  
      Case1: when user accesses login page with login request.  
      Case2: when user accesses login page directly by url.  
      Case3: when user called back from security filter
@@ -209,7 +213,7 @@
             response.sendRedirect(uri);
             }
             ```
-     - <span style="background-color: blue; color: white" > Step3) add configuration peoperty with successHandler
+     - <span style="background-color: blue; color: white" > optional Step3) add configuration peoperty with successHandler
         ```java
         .formLogin()
                 //.loginPage("/user/login").permitAll()
@@ -227,13 +231,46 @@
             }
             ```
 
+ 6. Getting properties in view
+     - <span style="background-color: yellow; color: black" > Step6) in the jsp files for view, it is required to plant tag library. in order to use its tag library need to add dependency and property before. propery for the version is not mandatory but if not worked, better to try to add.
+        ```xml
+        <properties>
+            <spring-security.version>5.7.2</spring-security.version>
+        </properties>
+        <dependency>	
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-taglibs</artifactId>
+                <version>${spring-security.version}</version>
+        </dependency>
+        ```
+     - <span style="background-color: yellow; color: black" > Step7) add tag library on the top of the jsp.
+        ```jsp
+        <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"  %>
 
+        <!DOCTYPE html>
+        ```
+     - <span style="background-color: yellow; color: black" > Step8) check the data to get from request using tab library on html sections.
+        ```jsp
+        <body>
+            <sec:authorize access="isAnonymous()">
+            <!-- sec:authorize means whether user has authorized token. using access property name if isAnonymous(), it means users who dont loggen in. therefor, it will show only to them(not login user)-->
+            <p>Login</p>
+            </sec:authorize>
 
+            <sec:authorize access="isAuthenticated()" >
+            <!-- this means users who loggen in. therefor, it will show only to them( login user)-->
+            Logout
+            </sec:authorize>
 
- 5. 
+            <sec:authentication property="principal.username" var="username"/>
+            <!-- with sec:authentication let to get data authenticated by property. principal has all data authenticated. declare variable on princial value then using ${variablename}, able to show on html-->
+            <p>${username}</p>
 
-etc
- - previo
+            <sec:authentication property="principal" var="pcp"/>
+            <p>${pcp}</p>
+            </sec:authorize>
+        </body>
+        ```
 
 
 
@@ -245,3 +282,4 @@ etc
  - https://kimcoder.tistory.com/250?category=911141
  - https://codevang.tistory.com/269
  - https://okky.kr/article/416253
+ - https://www.baeldung.com/spring-security-taglibs
