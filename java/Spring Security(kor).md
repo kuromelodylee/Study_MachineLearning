@@ -244,7 +244,8 @@
 
  6. Getting properties in view
      - <mark> Step6) 뷰의 jsp파일에서 데이터를 가져오기 위해서는 시큐리티에서 제공하는 테그라이브러리를 심어주어야 합니다. 이 테그라이브러리를 사용하려면 pom.xml에 디펜던시와 프로퍼티를 추가합니다. 
-     </mark>
+     </mark>   
+
         ```xml
         <properties>
             <spring-security.version>5.7.2</spring-security.version>
@@ -255,7 +256,8 @@
                 <version>${spring-security.version}</version>
         </dependency>
         ```
-     - <mark> Step7) jsp에 테그라이브러리 작성. </mark>
+        
+     - <mark> Step7) jsp에 테그라이브러리 작성. </mark>   
         ```jsp
         <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"  %>
 
