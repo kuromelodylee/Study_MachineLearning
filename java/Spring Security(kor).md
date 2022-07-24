@@ -256,7 +256,7 @@
                 <version>${spring-security.version}</version>
         </dependency>
         ```
-        
+
      - <mark> Step7) jsp에 테그라이브러리 작성. </mark>   
         ```jsp
         <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"  %>
@@ -297,3 +297,4 @@
  - https://codevang.tistory.com/269
  - https://okky.kr/article/416253
  - https://www.baeldung.com/spring-security-taglibs
+
