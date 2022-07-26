@@ -89,39 +89,69 @@
         ```
  5. ### composing return for loaduser
      - when loadUser activates you can find the login information form google id such as login key, google name, email and so on. Moverover, when you return DefaultOAuth2User class information, Spring security creates session and delivers token to views. 
-     - Step5) So, what we need to do is to decide to save user information on data base or to let login data on memory.   
+     - <mark>Step5) So, what we need to do is to decide to save user information on data base or to let login data on memory. </mark>   
      below is the example to save informaion to database and return to loadUser
          - 1st step: extract the email (or whatelse related with your database column) and check weather exist already.
          - 2nd step: if not existing, store user information then call stored information
-         - 3rd step: transfer the object type to DefaultOAuth2User
+         - 3rd step: transfer the object type to DefaultOAuth2User the return
 
 
         ```java
         @Override
         public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException{
-            //1. email 추출하여 한번 있는사용자인지 훑어보고 있으면 dto로 가져오고
-            OAuth2User oauth2User = super.loadUser(userRequest); //OAuth2 통해서 로그인한 유저정보 전체
-            String userEmail = oauth2User.getAttribute("email");
-            UserSocialDto dtoRes = chkUserSocialData(userEmail);
+            //1st Step
+            OAuth2User oauth2User = super.loadUser(userRequest); //call user information serialized
+            String userEmail = oauth2User.getAttribute("email"); //get email form OAuth2User
+            UserSocialDto dtoRes = chkUserSocialData(userEmail); //call function for checking user information in database by email (details skip in this doc)
 
-            //2. 없으면 usersocialDto에 묻지고 따지지도 않고 가입시킨다음 다시 1번으로가서 Dto 가져오고
-            if (dtoRes == null) { // 사용자 정보가 없다는 뜻
-                UserSocialDto dto = transferToDto(userRequest, oauth2User); //아래 DTO 함수실행
-                int res = regUserSocial(dto);
-                if (res == 1){ //db에 회원정보 저장 성공
+            //2nd Step
+            if (dtoRes == null) { // no information for user
+                UserSocialDto dto = transferToDto(userRequest, oauth2User); //refer FUNCTION #1
+                int res = regUserSocial(dto); //call function for save user information in database (details skip in this doc)
+                if (res == 1){ //success to insert to database
                     dtoRes = chkUserSocialData(dto.getSocialEmail());            
-                }else{ //db에 회원정보 저장 실패
-                    throw new OAuth2AuthenticationException("404: 소셜로그인으로 서비스 회원가입중 시스템 장애가 발생했습니다.");
+                }else{ // fail to insert to database
+                    throw new OAuth2AuthenticationException("404: system error when social login.");
                 }
             }
-            //3. OAuth2User로 dto를 번환한다음 아래 최종 loaduser를 DefaultOAuth2User타입으로 반환한다.
+            //3rd Step (refer below FUNCTION #2)
             OAuth2User res = transOAuth2User(dtoRes);
 
-            return res;
-            }
+        return res;
+        }
 
+        //FUNCTION #1
+        private UserSocialDto transferToDto(OAuth2UserRequest userRequest, OAuth2User oauth2User){
+        
+            UserSocialDto userSocialDto = new UserSocialDto();
+            userSocialDto.setSocialProvider(userRequest.getClientRegistration().getRegistrationId());
+            userSocialDto.setSocialId(oauth2User.getAttribute("sub"));
+            userSocialDto.setSocialEmail(oauth2User.getAttribute("email"));
+            userSocialDto.setSocialName(oauth2User.getAttribute("name"));
+        
+        return userSocialDto;
+        }
 
+        //FUNCTION #2
+        private OAuth2User transOAuth2User(UserSocialDto dto){
+
+            Map<String, Object> userDetails = new HashMap<>();
+            userDetails.put("provider", dto.getSocialProvider());
+            userDetails.put("sub", dto.getSocialId());
+            userDetails.put("email", dto.getSocialEmail());
+            userDetails.put("username", dto.getSocialName());
+
+            Collection<GrantedAuthority> auth = new ArrayList<>();
+            auth.add(new SimpleGrantedAuthority("ROLE_USER"));
+
+            OAuth2User transedOA2User = new DefaultOAuth2User(auth, userDetails, "username");
+
+        return transedOA2User;
+        }
+        
         ```
+
+
 
 
 
