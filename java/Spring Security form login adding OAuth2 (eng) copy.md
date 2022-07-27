@@ -150,11 +150,48 @@
         }
         
         ```
+ 6. ### Getting properties in view
+     - simmilar as form login before. it is able to be gotten by using pricipal. however, what the diffrence between form login and OAuth2 login is key name for "Name" is in case of OAuth2 defined "name" which means it is not able to be approached with like form login using "pricipal.username", but able to be using "principal.name".
+     - in above situation, as we used to get user information by form login with "pricipal.username", it is required to let parameter matched with both form login and OAuth2 login for the view page. Here are the 2 solutions for.
+         - solution 1) use only "name" instead of "username"
+            ```jsp
+            <sec:authorize access="isAuthenticated()">
+                <sec:authentication property="name" var="loginUserName" />
+                <span class="item">${loginUserName}</span>
+            ```
+            "name" returns the key value in both form login and Oauth2 login.
+         - solution 2) make gateway for getter function on DefaultOAuth2User by extension making it be able to response pricipal.username.
+             - step1) make java project file and extends DefaultOAuth2User
+             - step2) make function on inherited to call parants 
+             - step3) revise "transedOA2User" parants object to the child in function 2
+            
+            ```java
+            //STEP ONE
+            public class DefaultOAuth2UserExtention extends DefaultOAuth2User{
 
+                //Auto-generated constructor stub
+                public DefaultOAuth2UserExtention(Collection<? extends GrantedAuthority> authorities,
+                        Map<String, Object> attributes, String nameAttributeKey) {
+                    super(authorities, attributes, nameAttributeKey);     
+                }
 
+                //STEP TWO
+                public String getUsername(){
+                    return super.getName();
+                }
+            }
+            ```
+            ```java
+            //STEP THREE
+            //FUNCTION #2
+            private OAuth2User transOAuth2User(UserSocialDto dto){
 
+                //skip
 
-
+                OAuth2User transedOA2User = new DefaultOAuth2UserExtention(auth, userDetails, "username");
+            return transedOA2User;
+            }
+            ```
 
 ### Reference
  - https://velog.io/@kyu9610/Spring-Security-6.-OAuth2-Google-Login
