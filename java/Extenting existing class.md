@@ -9,7 +9,7 @@
  - step two) create the variable
  - step three) create the constructors including new variable
  - step four) greate getter method for variable
- - step five (optional)) override toString
+ - step five (optional)) override toString adding user number
     ```java
     //step 1.
     public class UserExtension extends User{
